@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión AFIP</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f1f0ec;
+    --border: rgba(0,0,0,0.10);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #6b6b65;
+    --text3: #9b9b94;
+    --green: #0f6e56;
+    --green-bg: #e1f5ee;
+    --red: #a32d2d;
+    --red-bg: #fcebeb;
+    --blue: #185fa5;
+    --blue-bg: #e6f1fb;
+    --amber: #854f0b;
+    --amber-bg: #faeeda;
+    --coral: #712b13;
+    --coral-bg: #faece7;
+    --purple: #3c3489;
+    --purple-bg: #eeedfe;
+    --radius: 10px;
+    --radius-sm: 7px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .app { max-width: 740px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .app-header { margin-bottom: 2rem; }
+  .app-header h1 { font-size: 24px; font-weight: 600; color: var(--text); display:flex;align-items:center;gap:10px; }
+  .app-header h1 i { font-size: 22px; }
+  .app-header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  /* Month bar */
+  .month-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .month-bar select, .month-bar input[type=number] {
+    font-size: 14px; padding: 7px 11px;
+    border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface); color: var(--text); outline: none;
+  }
+  .month-bar select:focus, .month-bar input:focus { border-color: var(--blue); }
+
+  /* Tabs */
+  .tab-bar { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: 500;
+    border-radius: 6px; border: none; background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 1rem; }
+
+  /* Input rows */
+  .input-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .input-row label { font-size: 14px; color: var(--text); flex: 1.4; min-width: 0; }
+  input[type=text], input[type=number], select {
+    font-size: 14px; padding: 7px 10px;
+    border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface); color: var(--text); outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--blue); }
+  .input-row input[type=text] { flex: 1.5; min-width: 0; }
+  .input-row input[type=number] { width: 130px; text-align: right; flex-shrink: 0; }
+  .currency-symbol { font-size: 14px; color: var(--text2); flex-shrink: 0; }
+  .monto-main input[type=number] { font-size: 20px; font-weight: 600; width: 200px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+    padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--surface); color: var(--text); cursor: pointer; transition: background 0.12s; white-space: nowrap; }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--text); color: var(--surface); border-color: transparent; }
+  .btn-primary:hover { opacity: 0.85; background: var(--text); }
+  .btn-danger { color: var(--red); border-color: transparent; background: transparent; padding: 6px 8px; }
+  .btn-danger:hover { background: var(--red-bg); }
+  .btn-sm { font-size: 12px; padding: 5px 10px; }
+  .btn-save-feedback { color: var(--green) !important; border-color: var(--green-bg) !important; background: var(--green-bg) !important; }
+
+  /* Metrics */
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px; }
+  .metric-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .metric-value { font-size: 20px; font-weight: 600; color: var(--text); }
+  .metric-value.pos { color: var(--green); }
+  .metric-value.neg { color: var(--red); }
+
+  /* Participant cards */
+  .participant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px,1fr)); gap: 10px; }
+  .participant-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .participant-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 10px; }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .neto { font-size: 19px; font-weight: 700; }
+  .neto.pos { color: var(--green); }
+  .neto.neg { color: var(--red); }
+  .mini-list { list-style: none; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .mini-list li { font-size: 12px; color: var(--text2); display: flex; justify-content: space-between; padding: 2px 0; }
+  .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+  /* Historial */
+  .historial-entry { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .historial-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .historial-header strong { font-size: 15px; font-weight: 600; }
+  .historial-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .hstat { font-size: 12px; color: var(--text2); }
+  .hstat span { display: block; font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .hstat span.pos { color: var(--green); }
+  .hstat span.neg { color: var(--red); }
+  .historial-detail { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+  .historial-date { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .empty-msg { font-size: 14px; color: var(--text2); padding: 1rem 0; }
+
+  .badge { display: inline-block; font-size: 11px; border-radius: 5px; padding: 2px 8px; margin-top: 2px; }
+  .section-note { font-size: 13px; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+  .actions-bar { display: flex; gap: 8px; }
+  .sync-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 1.25rem; }
+  .sync-bar-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-right: 4px; flex-shrink: 0; }
+  .import-feedback { font-size: 12px; padding: 5px 10px; border-radius: var(--radius-sm); display: none; }
+  .import-feedback.ok  { background: var(--green-bg); color: var(--green); display: inline-flex; align-items:center; gap:5px; }
+  .import-feedback.err { background: var(--red-bg);   color: var(--red);   display: inline-flex; align-items:center; gap:5px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <h1><i class="ti ti-building-bank"></i> Gestión AFIP</h1>
+    <p>Registro mensual de gastos y distribución entre participantes</p>
+  </div>
+
+  <div class="sync-bar">
+    <span class="sync-bar-label"><i class="ti ti-share" style="font-size:13px;vertical-align:-1px;margin-right:3px;"></i>Sincronizar datos:</span>
+    <button class="btn btn-sm" onclick="exportarDatos()"><i class="ti ti-download"></i> Exportar historial</button>
+    <label class="btn btn-sm" style="cursor:pointer;">
+      <i class="ti ti-upload"></i> Importar historial
+      <input type="file" accept=".json" onchange="importarDatos(event)" style="display:none;">
+    </label>
+    <span id="importFeedback" class="import-feedback"></span>
+  </div>
+
+  <div class="month-bar">
+    <select id="mesSelect">
+      <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+      <option value="3">Abril</option><option value="4">Mayo</option><option value="5" selected>Junio</option>
+      <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+      <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+    </select>
+    <input type="number" id="anioInput" value="2025" min="2020" max="2040" style="width:85px;">
+    <button class="btn btn-primary" id="btnGuardar" onclick="guardarMes()" style="margin-left:auto;">
+      <i class="ti ti-device-floppy"></i> Guardar mes
+    </button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('carga')"><i class="ti ti-pencil" style="font-size:14px;vertical-align:-1px;margin-right:4px;"></i>Carga</button>
+    <button class="tab" onclick="showTab('resumen')"><i class="ti ti-chart-pie" style="font-size:14px;vertical-align:-1px;margin-right:4px;"></i>Resumen</button>
+    <button class="tab" onclick="showTab('historial')"><i class="ti ti-clock-hour-4" style="font-size:14px;vertical-align:-1px;margin-right:4px;"></i>Historial</button>
+  </div>
+
+  <!-- CARGA -->
+  <div id="view-carga" class="view active">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-cash" style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Monto total cobrado por AFIP</div>
+      <div class="input-row monto-main">
+        <label>Total del mes</label>
+        <span class="currency-symbol">$</span>
+        <input type="number" id="montoTotal" placeholder="0" oninput="calcular()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-receipt" style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Gastos generales</div>
+      <div id="gastosGenerales"><p class="empty-msg">Sin gastos agregados.</p></div>
+      <button class="btn" onclick="agregarGasto()" style="margin-top:8px;">
+        <i class="ti ti-plus"></i> Agregar nuevo gasto
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-users" style="font-size:13px;vertical-align:-1px;margin-right:4px;"></i>Gastos pagados por participantes</div>
+      <p class="section-note">Si alguno pagó un gasto de su bolsillo, registralo acá. Se sumará al total y se le repondrá en la repartija final.</p>
+      <div id="gastosParticipantes"><p class="empty-msg">Sin gastos registrados.</p></div>
+      <button class="btn" onclick="agregarGastoParticipante()" style="margin-top:8px;">
+        <i class="ti ti-user-dollar"></i> Agregar gasto de participante
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="view-resumen" class="view">
+    <div id="summaryMetrics" class="metrics-grid"></div>
+    <div id="participantCards"></div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div id="view-historial" class="view">
+    <div id="historialContent"><p class="empty-msg">No hay meses guardados todavía.</p></div>
+  </div>
+</div>
+
+<script>
+const PARTICIPANTES = [
+  { id:'pablo',  nombre:'Pablo',  av:'pablo',  ini:'PA', bgColor:'#EEEDFE', txColor:'#3C3489' },
+  { id:'nico',   nombre:'Nico',   av:'nico',   ini:'NI', bgColor:'#E1F5EE', txColor:'#085041' },
+  { id:'caio',   nombre:'Caio',   av:'caio',   ini:'CA', bgColor:'#FAEEDA', txColor:'#633806' },
+  { id:'martin', nombre:'Martín', av:'martin', ini:'MA', bgColor:'#FAECE7', txColor:'#712B13' },
+];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+let gastosGenerales = [];
+let gastosParticipantes = [];
+let historial = [];
+let gIdG = 0, gIdP = 0;
+
+try { historial = JSON.parse(localStorage.getItem('afip_historial') || '[]'); } catch(e) { historial = []; }
+
+function fmt(n) {
+  return '$' + Number(n||0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function renderGastosGenerales() {
+  const c = document.getElementById('gastosGenerales');
+  if (!gastosGenerales.length) { c.innerHTML = '<p class="empty-msg">Sin gastos agregados.</p>'; return; }
+  c.innerHTML = gastosGenerales.map(g => `
+    <div class="input-row" id="gg${g.id}">
+      <input type="text" placeholder="Descripción (ej: Contador Pablo)" value="${g.desc}"
+        oninput="gastosGenerales.find(x=>x.id==${g.id}).desc=this.value;" style="flex:1.5;">
+      <span class="currency-symbol">$</span>
+      <input type="number" placeholder="0" value="${g.monto||''}"
+        oninput="gastosGenerales.find(x=>x.id==${g.id}).monto=parseFloat(this.value)||0;calcular();">
+      <button class="btn btn-danger" onclick="eliminarGasto(${g.id})" title="Eliminar">
+        <i class="ti ti-trash"></i>
+      </button>
+    </div>`).join('');
+}
+
+function renderGastosParticipantes() {
+  const c = document.getElementById('gastosParticipantes');
+  if (!gastosParticipantes.length) { c.innerHTML = '<p class="empty-msg">Sin gastos registrados.</p>'; return; }
+  c.innerHTML = gastosParticipantes.map(g => `
+    <div class="input-row" id="gp${g.id}">
+      <select onchange="gastosParticipantes.find(x=>x.id==${g.id}).quien=this.value;calcular();" style="min-width:90px;">
+        ${PARTICIPANTES.map(p => `<option value="${p.id}" ${g.quien===p.id?'selected':''}>${p.nombre}</option>`).join('')}
+      </select>
+      <input type="text" placeholder="Descripción del gasto" value="${g.desc}"
+        oninput="gastosParticipantes.find(x=>x.id==${g.id}).desc=this.value;" style="flex:1;">
+      <span class="currency-symbol">$</span>
+      <input type="number" placeholder="0" value="${g.monto||''}"
+        oninput="gastosParticipantes.find(x=>x.id==${g.id}).monto=parseFloat(this.value)||0;calcular();" style="width:110px;">
+      <button class="btn btn-danger" onclick="eliminarGastoP(${g.id})" title="Eliminar">
+        <i class="ti ti-trash"></i>
+      </button>
+    </div>`).join('');
+}
+
+function agregarGasto() {
+  gastosGenerales.push({id: gIdG++, desc: '', monto: 0});
+  renderGastosGenerales(); calcular();
+}
+function eliminarGasto(id) {
+  gastosGenerales = gastosGenerales.filter(g => g.id !== id);
+  renderGastosGenerales(); calcular();
+}
+function agregarGastoParticipante() {
+  gastosParticipantes.push({id: gIdP++, quien: 'pablo', desc: '', monto: 0});
+  renderGastosParticipantes(); calcular();
+}
+function eliminarGastoP(id) {
+  gastosParticipantes = gastosParticipantes.filter(g => g.id !== id);
+  renderGastosParticipantes(); calcular();
+}
+
+function calcular() {
+  const total = parseFloat(document.getElementById('montoTotal').value) || 0;
+  const sumGG = gastosGenerales.reduce((a,g) => a + (g.monto||0), 0);
+  const sumGP = gastosParticipantes.reduce((a,g) => a + (g.monto||0), 0);
+  const neto = total - sumGG - sumGP;
+  const porPersona = neto / 4;
+
+  document.getElementById('summaryMetrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Total AFIP</div><div class="metric-value">${fmt(total)}</div></div>
+    <div class="metric"><div class="metric-label">Gastos generales</div><div class="metric-value neg">${fmt(sumGG)}</div></div>
+    <div class="metric"><div class="metric-label">Gastos participantes</div><div class="metric-value neg">${fmt(sumGP)}</div></div>
+    <div class="metric"><div class="metric-label">Neto a repartir</div><div class="metric-value ${neto>=0?'pos':'neg'}">${fmt(neto)}</div></div>
+  `;
+
+  document.getElementById('participantCards').innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--text2);margin:1rem 0 0.6rem;">Distribución por participante</div>
+    <div class="participant-grid">
+    ${PARTICIPANTES.map(p => {
+      const gastosProp = gastosParticipantes.filter(g => g.quien === p.id);
+      const sumProp = gastosProp.reduce((a,g) => a + (g.monto||0), 0);
+      const netoP = porPersona + sumProp;
+      return `<div class="participant-card">
+        <div class="participant-name">
+          <span class="avatar" style="background:${p.bgColor};color:${p.txColor};">${p.ini}</span>
+          ${p.nombre}
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:3px;">Base: ${fmt(porPersona)}</div>
+        ${sumProp > 0 ? `<div style="font-size:12px;color:var(--green);margin-bottom:3px;">+ Reposición: ${fmt(sumProp)}</div>` : ''}
+        <div class="divider"></div>
+        <div class="neto ${netoP>=0?'pos':'neg'}">${fmt(netoP)}</div>
+        ${gastosProp.length ? `<ul class="mini-list">${gastosProp.map(g=>`<li><span>${g.desc||'Sin descripción'}</span><span>${fmt(g.monto)}</span></li>`).join('')}</ul>` : ''}
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+function guardarMes() {
+  const mes = parseInt(document.getElementById('mesSelect').value);
+  const anio = parseInt(document.getElementById('anioInput').value) || 2025;
+  const total = parseFloat(document.getElementById('montoTotal').value) || 0;
+  const sumGG = gastosGenerales.reduce((a,g) => a + (g.monto||0), 0);
+  const sumGP = gastosParticipantes.reduce((a,g) => a + (g.monto||0), 0);
+  const neto = total - sumGG - sumGP;
+  const key = `${anio}-${mes}`;
+  const entry = {
+    key, mes, anio, total,
+    gastosGenerales: gastosGenerales.map(g => ({...g})),
+    gastosParticipantes: gastosParticipantes.map(g => ({...g})),
+    neto,
+    fecha: new Date().toLocaleDateString('es-AR')
+  };
+  const idx = historial.findIndex(h => h.key === key);
+  if (idx >= 0) historial[idx] = entry; else historial.unshift(entry);
+  historial = historial.slice(0, 36);
+  try { localStorage.setItem('afip_historial', JSON.stringify(historial)); } catch(e) {}
+  renderHistorial();
+  const btn = document.getElementById('btnGuardar');
+  btn.classList.add('btn-save-feedback');
+  btn.innerHTML = '<i class="ti ti-check"></i> ¡Guardado!';
+  setTimeout(() => {
+    btn.classList.remove('btn-save-feedback');
+    btn.innerHTML = '<i class="ti ti-device-floppy"></i> Guardar mes';
+  }, 1800);
+}
+
+function cargarMes(key) {
+  const entry = historial.find(h => h.key === key);
+  if (!entry) return;
+  document.getElementById('mesSelect').value = entry.mes;
+  document.getElementById('anioInput').value = entry.anio;
+  document.getElementById('montoTotal').value = entry.total || '';
+  gastosGenerales = (entry.gastosGenerales || []).map(g => ({...g}));
+  gastosParticipantes = (entry.gastosParticipantes || []).map(g => ({...g}));
+  gIdG = gastosGenerales.reduce((a,g) => Math.max(a, g.id+1), 0);
+  gIdP = gastosParticipantes.reduce((a,g) => Math.max(a, g.id+1), 0);
+  renderGastosGenerales();
+  renderGastosParticipantes();
+  calcular();
+  showTab('carga');
+}
+
+function eliminarMes(key) {
+  if (!confirm(`¿Eliminar el registro de este mes? Esta acción no se puede deshacer.`)) return;
+  historial = historial.filter(h => h.key !== key);
+  try { localStorage.setItem('afip_historial', JSON.stringify(historial)); } catch(e) {}
+  renderHistorial();
+}
+
+function renderHistorial() {
+  const c = document.getElementById('historialContent');
+  if (!historial.length) {
+    c.innerHTML = '<p class="empty-msg">No hay meses guardados todavía.</p>';
+    return;
+  }
+  c.innerHTML = historial.map(h => {
+    const sumGG = (h.gastosGenerales||[]).reduce((a,g) => a+(g.monto||0), 0);
+    const sumGP = (h.gastosParticipantes||[]).reduce((a,g) => a+(g.monto||0), 0);
+    const porP = h.neto / 4;
+    const descGG = (h.gastosGenerales||[]).filter(g => g.desc || g.monto).map(g => `${g.desc||'Sin nombre'} (${fmt(g.monto)})`).join(', ');
+    const descGP = (h.gastosParticipantes||[]).map(g => {
+      const p = PARTICIPANTES.find(x => x.id === g.quien);
+      return `${p ? p.nombre : g.quien}: ${g.desc||'sin desc.'} (${fmt(g.monto)})`;
+    }).join(', ');
+    return `<div class="historial-entry">
+      <div class="historial-header">
+        <strong>${MESES[h.mes]} ${h.anio}</strong>
+        <div class="actions-bar">
+          <button class="btn btn-sm" onclick="cargarMes('${h.key}')"><i class="ti ti-edit"></i> Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarMes('${h.key}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="historial-stats">
+        <div class="hstat">Total AFIP<span>${fmt(h.total)}</span></div>
+        <div class="hstat">Gastos totales<span class="neg">${fmt(sumGG+sumGP)}</span></div>
+        <div class="hstat">Por persona<span class="${porP>=0?'pos':'neg'}">${fmt(porP)}</span></div>
+      </div>
+      ${descGG ? `<div class="historial-detail"><strong>Gastos:</strong> ${descGG}</div>` : ''}
+      ${descGP ? `<div class="historial-detail"><strong>Pagos propios:</strong> ${descGP}</div>` : ''}
+      <div class="historial-date">Guardado el ${h.fecha}</div>
+    </div>`;
+  }).join('');
+}
+
+function showTab(name) {
+  const tabs = document.querySelectorAll('.tab');
+  const names = ['carga', 'resumen', 'historial'];
+  tabs.forEach((t, i) => t.classList.toggle('active', names[i] === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'resumen') calcular();
+  if (name === 'historial') renderHistorial();
+}
+
+function exportarDatos() {
+  if (!historial.length) {
+    alert('No hay datos guardados para exportar todavía.\nGuardá al menos un mes primero.');
+    return;
+  }
+  const payload = JSON.stringify({ version: 1, exportado: new Date().toLocaleDateString('es-AR'), historial }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const fecha = new Date().toISOString().slice(0,10);
+  a.download = `afip_historial_${fecha}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarDatos(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  const fb = document.getElementById('importFeedback');
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.historial || !Array.isArray(data.historial)) throw new Error('Formato inválido');
+      const incoming = data.historial;
+      let merged = 0, added = 0;
+      incoming.forEach(entry => {
+        const idx = historial.findIndex(h => h.key === entry.key);
+        if (idx >= 0) { historial[idx] = entry; merged++; }
+        else { historial.push(entry); added++; }
+      });
+      historial.sort((a,b) => {
+        if (b.anio !== a.anio) return b.anio - a.anio;
+        return b.mes - a.mes;
+      });
+      historial = historial.slice(0, 60);
+      try { localStorage.setItem('afip_historial', JSON.stringify(historial)); } catch(err) {}
+      renderHistorial();
+      fb.className = 'import-feedback ok';
+      fb.innerHTML = `<i class="ti ti-check" style="font-size:13px;"></i> ${added} nuevos, ${merged} actualizados`;
+      fb.style.display = 'inline-flex';
+      setTimeout(() => { fb.style.display = 'none'; }, 4000);
+    } catch(err) {
+      fb.className = 'import-feedback err';
+      fb.innerHTML = `<i class="ti ti-alert-circle" style="font-size:13px;"></i> Archivo inválido`;
+      fb.style.display = 'inline-flex';
+      setTimeout(() => { fb.style.display = 'none'; }, 4000);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+renderGastosGenerales();
+renderGastosParticipantes();
+calcular();
+renderHistorial();
+</script>
+</body>
+</html>
